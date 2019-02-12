@@ -5,8 +5,6 @@ import requests
 
 log = logging.getLogger(__name__)
 API_URL = 'https://slack.com/api/chat.command'
-# TOKEN = 'xoxp-3990455078-426475007523-450294814544-7463ab2e63fe0011eb7664caeba3d1ff'
-# CHANNEL = 'CD8TL598B'
 COMMAND = '/poll'
 
 
@@ -29,5 +27,4 @@ def post_poll(options: List[str], slack_token: str, slack_channel: str):
         'command': COMMAND,
         'text': poll_text
     }
-    print(params)
-    # requests.post(API_URL, params=params)
+    requests.post(API_URL, params=params)
