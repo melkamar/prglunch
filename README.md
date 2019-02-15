@@ -26,5 +26,4 @@ You can customize which menus you get sent by enabling/disabling _scrapers_. To 
 
 ## Screenshots
 
-Inline-style: 
 ![prglunch in Slack](docs/slack-screenshot.png "prglunch in Slack")
