@@ -9,7 +9,9 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("chardet").setLevel(logging.WARNING)
 
-
+#
+# Edit this list to configure which restaurants (and in which order) to report
+#
 SCRAPERS = [
     MahiniScraper(),
     ZauVegetarianScraper(),
