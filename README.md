@@ -1,7 +1,7 @@
 # prglunch
 
 - Report daily lunch menus to your Slack
-- Vote in Slack on where to go with your coworkers
+- Vote in Slack on where to go with your coworkers (voting done through Slack's Simple Poll)
 
 ### Issues, contributing
 The main project repository lives in [GitLab](https://gitlab.com/melkamar/prglunch). Please file any issues there.
@@ -23,3 +23,8 @@ That's it, you should be good to go. You can manually trigger the scheduler to s
 You can customize which menus you get sent by enabling/disabling _scrapers_. To do that, head over to [prglunch.py](prglunch/prglunch.py#L15).
 
 *If you end up creating your own scrapers, please create a MR to the upstream!*
+
+## Screenshots
+
+Inline-style: 
+![prglunch in Slack](docs/slack-screenshot.png "prglunch in Slack")
