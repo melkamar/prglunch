@@ -26,3 +26,4 @@ test:
   - python setup.py test
   except:
     - schedules
+  when: manual
