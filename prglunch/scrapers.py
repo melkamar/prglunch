@@ -179,6 +179,39 @@ class PintaScraper(BaseScraper):
     def menu_url(self) -> str:
         return 'http://www.pinta-restaurace.cz/denni_menu.php'
 
+class VietnamBistroScraper(BaseScraper):
+    @property
+    def name(self) -> str:
+        return 'Vietnamské bistro'
+
+    @property
+    def menu_url(self) -> str:
+        return ''
+
+    def fetch_menu(self) -> List[MenuItem]:
+        return [
+            MenuItem('Pho Bo', 110),
+            MenuItem('Bun Bo Nam Bo', 110),
+            MenuItem('A podobně', 110),
+        ]
+
+class IndianBistroScraper(BaseScraper):
+    @property
+    def name(self) -> str:
+        return 'Indické bistro na tržnici'
+
+    @property
+    def menu_url(self) -> str:
+        return ''
+
+    def fetch_menu(self) -> List[MenuItem]:
+        return [
+            MenuItem('Murgh Makhani', 110),
+            MenuItem('Chicken Tikka Masala', 110),
+            MenuItem('Vindaloo', 110),
+            MenuItem('Dhal', 110),
+            MenuItem('A podobně', 110),
+        ]
 
 class ZlataKovadlinaScraper(BaseScraper):
     @property
