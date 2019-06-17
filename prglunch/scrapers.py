@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from prglunch.model import MenuItem, Restaurant
 
 __all__ = ['BaseScraper', 'MahiniScraper', 'ZauVegetarianScraper', 'KozlovnaScraper',
-           'PintaScraper', 'ZlataKovadlinaScraper', 'UHoliseScraper', 'PetPenezScraper']
+           'IndianBistroScraper', 'VietnamBistroScraper', 'ZlataKovadlinaScraper', 'UHoliseScraper', 'PetPenezScraper']
 
 log = logging.getLogger(__name__)
 
