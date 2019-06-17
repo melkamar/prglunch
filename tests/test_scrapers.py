@@ -19,13 +19,6 @@ def test_sanity_all_scrapers(scraper):
     assert len(scraper.fetch_menu()) > 0
 
 
-class TestPintaScraper:
-    def test_fetch_menu(self):
-        s = PintaScraper()
-        meals = s.fetch_menu()
-        print(meals)
-
-
 class TestKovadlinaScraper:
     def test_fetch_menu(self):
         s = ZlataKovadlinaScraper()
