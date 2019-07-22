@@ -19,7 +19,8 @@ SCRAPERS = [
     VietnamBistroScraper(),
     ZlataKovadlinaScraper(),
     UHoliseScraper(),
-    PetPenezScraper()
+    PetPenezScraper(),
+    BentoCafeScraper()
 ]
 
 

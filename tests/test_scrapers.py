@@ -39,3 +39,10 @@ class TestPetPenezScraper:
         meals = s.fetch_menu()
         print(meals)
         assert len(meals) > 0
+
+class TestBentoCafeScraper:
+    def test_fetch_menu(self):
+        s = BentoCafeScraper()
+        meals = s.fetch_menu()
+        print(meals)
+        assert len(meals) > 0

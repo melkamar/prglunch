@@ -2,6 +2,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from typing import List
+import json
 
 import requests
 from bs4 import BeautifulSoup
@@ -9,7 +10,8 @@ from bs4 import BeautifulSoup
 from prglunch.model import MenuItem, Restaurant
 
 __all__ = ['BaseScraper', 'MahiniScraper', 'ZauVegetarianScraper', 'KozlovnaScraper',
-           'IndianBistroScraper', 'VietnamBistroScraper', 'ZlataKovadlinaScraper', 'UHoliseScraper', 'PetPenezScraper']
+           'IndianBistroScraper', 'VietnamBistroScraper', 'ZlataKovadlinaScraper', 'UHoliseScraper', 'PetPenezScraper',
+           'BentoCafeScraper']
 
 log = logging.getLogger(__name__)
 
@@ -306,3 +308,28 @@ class PetPenezScraper(BaseScraper):
     @property
     def menu_url(self) -> str:
         return 'http://www.restauracepetpenez.cz/'
+
+class BentoCafeScraper(BaseScraper):
+    def fetch_menu(self) -> List[MenuItem]:
+        data = json.loads(self.get_menu_page(override_encoding=True))
+        menuSection = [section for section in data["menu"]["sections"][0]["children"] if section["title"]["cs_CZ"] == "SPECIALITA DNE"]
+        if len(menuSection) == 0:
+            return []
+
+        meals = []
+        itemIds = menuSection[0]["itemIds"]
+        items = [item for item in data["menu"]["items"] if item["id"] in itemIds]
+        for item in items:
+            if re.search("(zítra|k dispozici až)", item["description"]["cs_CZ"]):
+                continue
+            meals.append(MenuItem(item["title"]["cs_CZ"], item["price"]))
+
+        return meals
+
+    @property
+    def name(self) -> str:
+        return 'Bento Cafe'
+
+    @property
+    def menu_url(self) -> str:
+        return 'https://api.wixrestaurants.com/v2/organizations/7186971829172280/full'
