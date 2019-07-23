@@ -1,0 +1,8 @@
+__pycache__
+dist
+prglunch_venv
+.eggs
+*.egg-info
+*.pyc
+*.pyd
+*.pyo
