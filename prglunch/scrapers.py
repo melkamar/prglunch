@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from prglunch.model import MenuItem, Restaurant
 
 __all__ = ['BaseScraper', 'MahiniScraper', 'ZauVegetarianScraper', 'KozlovnaScraper',
-           'IndianBistroScraper', 'VietnamBistroScraper', 'ZlataKovadlinaScraper', 'UHoliseScraper', 'PetPenezScraper',
+           'VietnamBistroScraper', 'ZlataKovadlinaScraper', 'UHoliseScraper', 'PetPenezScraper',
            'BentoCafeScraper']
 
 log = logging.getLogger(__name__)
@@ -194,24 +194,6 @@ class VietnamBistroScraper(BaseScraper):
         return [
             MenuItem('Pho Bo', 110),
             MenuItem('Bun Bo Nam Bo', 110),
-            MenuItem('A podobně', 110),
-        ]
-
-class IndianBistroScraper(BaseScraper):
-    @property
-    def name(self) -> str:
-        return 'Indické bistro na tržnici'
-
-    @property
-    def menu_url(self) -> str:
-        return ''
-
-    def fetch_menu(self) -> List[MenuItem]:
-        return [
-            MenuItem('Murgh Makhani', 110),
-            MenuItem('Chicken Tikka Masala', 110),
-            MenuItem('Vindaloo', 110),
-            MenuItem('Dhal', 110),
             MenuItem('A podobně', 110),
         ]
 
