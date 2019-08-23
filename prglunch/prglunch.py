@@ -15,7 +15,6 @@ logging.getLogger("chardet").setLevel(logging.WARNING)
 SCRAPERS = [
     MahiniScraper(),
     KozlovnaScraper(),
-    IndianBistroScraper(),
     VietnamBistroScraper(),
     ZlataKovadlinaScraper(),
     UHoliseScraper(),
