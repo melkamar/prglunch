@@ -3,17 +3,26 @@ import re
 from abc import ABC, abstractmethod
 from typing import List
 import json
+from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
 
 from prglunch.model import MenuItem, Restaurant
 
-__all__ = ['BaseScraper', 'MahiniScraper', 'ZauVegetarianScraper', 'KozlovnaScraper',
-           'VietnamBistroScraper', 'ZlataKovadlinaScraper', 'UHoliseScraper', 'PetPenezScraper',
-           'BentoCafeScraper']
+__all__ = ['OliveScraper']
 
 log = logging.getLogger(__name__)
+
+DAYS_OF_WEEK = [
+    'pondělí',
+    'úterý',
+    'středa',
+    'čtvrtek',
+    'pátek',
+    'sobota',
+    'neděle',
+]
 
 
 class BaseScraper(ABC):
@@ -60,258 +69,65 @@ class BaseScraper(ABC):
 
         return -1
 
+    def get_soup_of_menu(self) -> BeautifulSoup:
+        """Get the BeautifulSoup object populated with the downloaded HTML menu"""
+        return BeautifulSoup(self.get_menu_page(), 'html.parser')
 
-class MahiniScraper(BaseScraper):
-    REGEX_PREFIX_PATTERN = r'(VEGE -)|(VÝDEJ \d* -)'
 
-    @property
-    def menu_url(self):
-        return 'https://www.manihi.cz/menu/'
-
+class OliveScraper(BaseScraper):
     def fetch_menu(self) -> List[MenuItem]:
-        soup = BeautifulSoup(self.get_menu_page(), 'html.parser')
-        candidates = soup.select('div.content.cf.wnd-no-cols div.text-content p strong')
-        meal_names = [c.text for c in candidates if c.text.find('Kč') != -1]
+        result = []
 
-        meals = []
-        for meal_name in meal_names:
-            price = BaseScraper.parse_price_kc(meal_name)
+        # True if the iteration is inside the day we want the menu for. If this is False then we
+        # are not adding menu items to the result set
+        inside_wanted_day = False
 
-            name_without_price = meal_name.replace('\n', ' ')
-            name_without_price = re.sub(BaseScraper.REGEX_PRICE_PATTERN, '', name_without_price)
-            name_without_price = re.sub(MahiniScraper.REGEX_PREFIX_PATTERN, '', name_without_price)
-            name_without_price = name_without_price.strip()
-            meals.append(MenuItem(name_without_price, price))
+        soup = self.get_soup_of_menu()
+        meal_wrappers_tags = soup.select('div#detail_content_block tr')
+        for meal_wrapper in meal_wrappers_tags:
+            day_of_week_word = DAYS_OF_WEEK[datetime.now().weekday()]
+            if meal_wrapper.text.strip().lower() == day_of_week_word:
+                inside_wanted_day = True
+                continue
 
-        return meals
+            if not inside_wanted_day:
+                continue
+
+            if meal_wrapper.text.strip().lower() in DAYS_OF_WEEK:
+                # We are already inside a day of week we are looking for and just got a header for
+                # another day of week -> we are done
+                break
+
+            # e.g. "Polévka: **Kulajda s houbami / Dill sour soup"
+            full_meal_name = meal_wrapper.select_one('th').text
+
+            match = re.search(r'\*\*([^/]+)', full_meal_name)
+            if match:
+                meal_name = match.group(1).strip()
+            else:
+                meal_name = 'N/A'
+
+            # Ignore certain meals
+            if meal_name in [
+                'Denní nabídka jídel z Hummus a Gyros baru!'
+            ]:
+                continue
+
+            full_meal_price = meal_wrapper.select_one('td').text
+            price_match = re.search(self.REGEX_PRICE_PATTERN, full_meal_price)
+            if price_match:
+                meal_price = price_match.group(1)
+            else:
+                meal_price = -1
+
+            result.append(MenuItem(meal_name, meal_price))
+
+        return result
 
     @property
     def name(self) -> str:
-        return "Mahini"
-
-
-class ZauVegetarianScraper(BaseScraper):
-    def fetch_menu(self) -> List[MenuItem]:
-        return [
-            MenuItem("Samoobslužný bufet (100g)", 29)
-        ]
-
-    @property
-    def name(self) -> str:
-        return "ZAU Vegetariánská restaurace (asijský bufet)"
+        return 'Olive'
 
     @property
     def menu_url(self) -> str:
-        return ""
-
-
-class KozlovnaScraper(BaseScraper):
-    def fetch_menu(self) -> List[MenuItem]:
-        soup = BeautifulSoup(self.get_menu_page(), 'html.parser')
-        meals = []
-        candidates = soup.select('table.dailyMenuTable tr')
-        for candidate in candidates:
-            meal_name_tags = candidate.select('td.td-popis span.td-jidlo-obsah')
-            if not meal_name_tags:
-                continue
-            assert len(meal_name_tags) == 1, f'Expected to find a single meal name, ' \
-                f'but found {meal_name_tags}'
-            meal_name = meal_name_tags[0].text.replace('\n', ' ').strip()
-
-            if KozlovnaScraper._exclude_item(meal_name):
-                continue
-
-            meal_price_tags = candidate.select('td.td-cena')
-            meal_price = -1
-            if meal_price_tags:
-                assert len(meal_price_tags) == 1, f'Expected to find a single meal price, ' \
-                    f'but found {meal_name_tags}'
-                match = re.search(r'\s*(\d*).*', meal_price_tags[0].text)
-                if match:
-                    meal_price = int(match.group(1))
-            meals.append(MenuItem(meal_name, meal_price))
-
-        return meals
-
-    @staticmethod
-    def _exclude_item(name: str) -> bool:
-        """
-        We want to exclude some items (coffee, lemonades). If this function returns True, the item is to be discarded.
-        """
-        if name.lower().startswith('espresso'):
-            return True
-
-        if name.lower().startswith('u nás vyroben'):
-            return True
-
-        return False
-
-    @property
-    def name(self) -> str:
-        return 'Holešovická Kozlovna'
-
-    @property
-    def menu_url(self) -> str:
-        return 'http://www.holesovickakozlovna.cz/#pn'
-
-
-class PintaScraper(BaseScraper):
-    def fetch_menu(self) -> List[MenuItem]:
-        soup = BeautifulSoup(self.get_menu_page(override_encoding=True), 'html.parser')
-        meals = []
-        candidates = soup.select('table tr')
-        for candidate in candidates:
-            tds = candidate.select('td')
-
-            # Only condsider rows with 3 tds
-            if len(tds) != 3:
-                continue
-
-            meal_name = tds[1].text
-            meal_price = BaseScraper.parse_price_kc(tds[2].text)
-            meals.append(MenuItem(meal_name, meal_price))
-
-        return meals
-
-    @property
-    def name(self) -> str:
-        return "Pinta"
-
-    @property
-    def menu_url(self) -> str:
-        return 'http://www.pinta-restaurace.cz/denni_menu.php'
-
-class VietnamBistroScraper(BaseScraper):
-    @property
-    def name(self) -> str:
-        return 'Vietnamské bistro'
-
-    @property
-    def menu_url(self) -> str:
-        return ''
-
-    def fetch_menu(self) -> List[MenuItem]:
-        return [
-            MenuItem('Pho Bo', 110),
-            MenuItem('Bun Bo Nam Bo', 110),
-            MenuItem('A podobně', 110),
-        ]
-
-class ZlataKovadlinaScraper(BaseScraper):
-    @property
-    def name(self) -> str:
-        return 'Zlatá kovadlina'
-
-    @property
-    def menu_url(self) -> str:
-        return 'http://zlatakovadlina.cz/'
-
-    def fetch_menu(self) -> List[MenuItem]:
-        soup = BeautifulSoup(self.get_menu_page(override_encoding=True), 'html.parser')
-        meals = []
-        candidates = soup.select('div.wpb_wrapper table.rwd-table tr')
-        for candidate in candidates:
-            tds = candidate.select('td')
-
-            # Only condsider rows with 3 tds
-            if len(tds) != 9:
-                continue
-
-            if not tds[3].text.strip():  # Skip items with no price text
-                continue
-
-            meal_name = tds[2].text
-            meal_price = BaseScraper.parse_price_kc(tds[3].text)
-            meals.append(MenuItem(meal_name, meal_price))
-
-        return meals
-
-
-class UHoliseScraper(BaseScraper):
-    def fetch_menu(self) -> List[MenuItem]:
-        soup = BeautifulSoup(self.get_menu_page(override_encoding=True), 'html.parser')
-        meals = []
-        candidates = soup.select('div.lcMenuWrapper div.lc_block_wrapper')
-        for candidate in candidates:
-            column_texts = [child.select('span')[0] for child in list(candidate.children)[1:]]
-            meal_name, meal_price = map(lambda x: x.text.capitalize(), column_texts)
-
-            # Skip drinks (0,2 l - Limonáda)
-            if meal_name.startswith('0,'):
-                continue
-
-            meals.append(MenuItem(meal_name, BaseScraper.parse_price_kc(meal_price)))
-
-        return meals
-
-    @property
-    def name(self) -> str:
-        return "U Holiše"
-
-    @property
-    def menu_url(self) -> str:
-        return "https://www.restauraceuholise.cz/menu/denni-menu"
-
-
-class PetPenezScraper(BaseScraper):
-    def fetch_menu(self) -> List[MenuItem]:
-        soup = BeautifulSoup(self.get_menu_page(override_encoding=True), 'html.parser')
-        meals = []
-        tables = soup.select('div.content table')
-
-        # Daily menu
-        table = tables[0]
-        rows = table.select('tr')
-        for row in rows:
-            cells = row.select('td')
-            name = cells[1].text
-            price = self.parse_price_kc(cells[2].text)
-
-            meals.append(MenuItem(name, price))
-
-        # Weekly menu
-        table = tables[1]
-        rows = table.select('tr')
-        for row in rows:
-            cells = row.select('td')
-            name = cells[1].text
-            price = self.parse_price_kc(cells[2].text)
-            if price < 60:  # Skip low-priced items (drinks etc.)
-                continue
-
-            meals.append(MenuItem(name, price))
-
-        return meals
-
-    @property
-    def name(self) -> str:
-        return 'Pět Peněz'
-
-    @property
-    def menu_url(self) -> str:
-        return 'http://www.restauracepetpenez.cz/'
-
-class BentoCafeScraper(BaseScraper):
-    def fetch_menu(self) -> List[MenuItem]:
-        data = json.loads(self.get_menu_page(override_encoding=True))
-        menuSection = [section for section in data["menu"]["sections"][0]["children"] if section["title"]["cs_CZ"] == "SPECIALITA DNE"]
-        if len(menuSection) == 0:
-            return []
-
-        meals = []
-        itemIds = menuSection[0]["itemIds"]
-        items = [item for item in data["menu"]["items"] if item["id"] in itemIds]
-        for item in items:
-            if re.search("(zítra|k dispozici až)", item["description"]["cs_CZ"]):
-                continue
-            meals.append(MenuItem(item["title"]["cs_CZ"], item["price"]))
-
-        return meals
-
-    @property
-    def name(self) -> str:
-        return 'Bento Cafe'
-
-    @property
-    def menu_url(self) -> str:
-        return 'https://api.wixrestaurants.com/v2/organizations/7186971829172280/full'
+        return 'http://www.olivefood.cz/olive-florentinum/10/'

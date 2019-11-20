@@ -13,13 +13,7 @@ logging.getLogger("chardet").setLevel(logging.WARNING)
 # Edit this list to configure which restaurants (and in which order) to report
 #
 SCRAPERS = [
-    MahiniScraper(),
-    KozlovnaScraper(),
-    VietnamBistroScraper(),
-    ZlataKovadlinaScraper(),
-    UHoliseScraper(),
-    PetPenezScraper(),
-    BentoCafeScraper()
+    OliveScraper()
 ]
 
 
