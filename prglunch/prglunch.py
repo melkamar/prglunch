@@ -1,5 +1,5 @@
 from prglunch.model import *
-from prglunch.scrapers import *
+from prglunch.scrapers import scrapers_list
 import logging
 from prglunch import slack
 import argparse
@@ -9,16 +9,9 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("chardet").setLevel(logging.WARNING)
 
-#
-# Edit this list to configure which restaurants (and in which order) to report
-#
-SCRAPERS = [
-    OliveScraper()
-]
-
 
 def get_restaurants() -> List[Restaurant]:
-    return [sc.get_restaurant() for sc in SCRAPERS]
+    return [sc.get_restaurant() for sc in scrapers_list]
 
 
 def restaurant_to_slack_poll(restaurant: Restaurant) -> str:

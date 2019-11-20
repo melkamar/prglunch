@@ -10,8 +10,6 @@ from bs4 import BeautifulSoup
 
 from prglunch.model import MenuItem, Restaurant
 
-__all__ = ['OliveScraper']
-
 log = logging.getLogger(__name__)
 
 DAYS_OF_WEEK = [
@@ -23,6 +21,29 @@ DAYS_OF_WEEK = [
     'sobota',
     'neděle',
 ]
+
+__all__ = ['scrapers_list']
+
+# This list will contain all scrapers registered by @scraper
+scrapers_list = []
+
+
+def scraper(cls):
+    """
+    Decorator to register a scraper class. All scraper classes that should be used must be
+    decorated using this.
+
+    The decorator just instantiates the class and stores it in the scrapers_list.
+
+    :param cls: The decorated class
+    :return:
+    """
+    scrapers_list.append(cls())
+
+    def wrapped_class():
+        return cls()
+
+    return wrapped_class
 
 
 class BaseScraper(ABC):
@@ -74,6 +95,7 @@ class BaseScraper(ABC):
         return BeautifulSoup(self.get_menu_page(), 'html.parser')
 
 
+@scraper
 class OliveScraper(BaseScraper):
     def fetch_menu(self) -> List[MenuItem]:
         result = []

@@ -1,12 +1,7 @@
-from prglunch.prglunch import SCRAPERS
-from prglunch.scrapers import *
-import pytest
+from prglunch.scrapers import scrapers_list, OliveScraper
 
-
-@pytest.mark.parametrize('scraper', SCRAPERS, ids=[s.__class__.__name__ for s in SCRAPERS])
-def test_sanity_all_scrapers(scraper):
-    """Check that all scrapers return at least something."""
-    assert len(scraper.fetch_menu()) > 0
+def test_scrapers_count():
+    assert len(scrapers_list) > 0
 
 
 class TestOliveScraper:
