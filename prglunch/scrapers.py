@@ -1,9 +1,8 @@
 import logging
 import re
 from abc import ABC, abstractmethod
-from typing import List
-import json
 from datetime import datetime
+from typing import List
 
 import requests
 from bs4 import BeautifulSoup
@@ -94,6 +93,10 @@ class BaseScraper(ABC):
         """Get the BeautifulSoup object populated with the downloaded HTML menu"""
         return BeautifulSoup(self.get_menu_page(), 'html.parser')
 
+    @staticmethod
+    def get_current_weekday() -> int:
+        return datetime.now().weekday()
+
 
 @scraper
 class OliveScraper(BaseScraper):
@@ -107,7 +110,7 @@ class OliveScraper(BaseScraper):
         soup = self.get_soup_of_menu()
         meal_wrappers_tags = soup.select('div#detail_content_block tr')
         for meal_wrapper in meal_wrappers_tags:
-            day_of_week_word = DAYS_OF_WEEK[datetime.now().weekday()]
+            day_of_week_word = DAYS_OF_WEEK[self.get_current_weekday()]
             if meal_wrapper.text.strip().lower() == day_of_week_word:
                 inside_wanted_day = True
                 continue
@@ -153,3 +156,65 @@ class OliveScraper(BaseScraper):
     @property
     def menu_url(self) -> str:
         return 'http://www.olivefood.cz/olive-florentinum/10/'
+
+
+@scraper
+class RebelWingsScraper(BaseScraper):
+    def fetch_menu(self) -> List[MenuItem]:
+        result = []
+
+        soup = self.get_soup_of_menu()
+        meal_wrappers_tags = soup.select('div.foodlist')
+
+        for meal_wrappers_tag in meal_wrappers_tags:
+            header_tag = meal_wrappers_tag.select_one('h2')
+            if header_tag is None:
+                continue
+
+            header_text = header_tag.text.lower()
+            if self._should_skip_header(header_text):
+                continue
+
+            day_of_week = self._get_day_of_week_from_header(header_text)
+            if self.get_current_weekday() != day_of_week:
+                continue
+
+            # Now we are in the tag of the current day - process that
+
+            food_tags = meal_wrappers_tag.select('div.foodname')
+            price_tags = meal_wrappers_tag.select('div.foodprice')
+
+            for food_tag, price_tag in zip(food_tags, price_tags):
+                food_name = food_tag.text.strip()
+                food_price = self.parse_price_kc(price_tag.text)
+                result.append(MenuItem(food_name, food_price))
+
+        return result
+
+    @staticmethod
+    def _get_day_of_week_from_header(header_text: str) -> int:
+        match = re.search(r'^([^/]+)', header_text)
+        if not match:
+            return -1
+
+        day_name = match.group(1).strip().lower()
+        return DAYS_OF_WEEK.index(day_name)
+
+    @staticmethod
+    def _should_skip_header(header_text):
+        for blacklisted_text in [
+            'acqua comunale',
+            'hit týdne'
+        ]:
+            if blacklisted_text in header_text:
+                return True
+
+        return False
+
+    @property
+    def name(self) -> str:
+        return 'Rebel Wings'
+
+    @property
+    def menu_url(self) -> str:
+        return 'http://www.rebelwings.cz/#weeklymenu'
