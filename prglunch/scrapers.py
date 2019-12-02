@@ -51,7 +51,7 @@ class BaseScraper(ABC):
 
     A scraper is responsible for fetching and parsing a restaurant menu.
     """
-    REGEX_PRICE_PATTERN = r'(?:(\d+)\s*[Kk][Čč])|(?:(\d+)\s*,-)'
+    REGEX_PRICE_PATTERN = r'(?:(\d+)\s*[Kk][Čč])|(?:(\d+)\s*,[-–])'
 
     def get_restaurant(self):
         return Restaurant(self.name, self.fetch_menu())
@@ -218,3 +218,36 @@ class RebelWingsScraper(BaseScraper):
     @property
     def menu_url(self) -> str:
         return 'http://www.rebelwings.cz/#weeklymenu'
+
+
+@scraper
+class PotrefenaHusaScraper(BaseScraper):
+    def fetch_menu(self) -> List[MenuItem]:
+        result = []
+
+        soup = self.get_soup_of_menu()
+        meals_div = soup.select_one('div.denninabidka')
+
+        meal_names_tags = meals_div.select('h4')
+        meal_prices_tags = meals_div.select('span.price')
+        meal_details_tags = meals_div.select('p')
+
+        for meal_name_tag, meal_price_tag, meal_details_tag in zip(meal_names_tags,
+                                                                   meal_prices_tags,
+                                                                   meal_details_tags):
+            meal_full_name = '{} {}'.format(meal_name_tag.text.replace('\xa0', ' ').strip(),
+                                            meal_details_tag.text.replace('\xa0', ' ').strip())
+
+            meal_price = self.parse_price_kc(meal_price_tag.text.strip())
+
+            result.append(MenuItem(meal_full_name, meal_price))
+
+        return result
+
+    @property
+    def name(self) -> str:
+        return 'Potrefená Husa'
+
+    @property
+    def menu_url(self) -> str:
+        return 'https://www.potrefena-husa.eu/'
