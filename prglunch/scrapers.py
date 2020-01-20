@@ -251,3 +251,16 @@ class PotrefenaHusaScraper(BaseScraper):
     @property
     def menu_url(self) -> str:
         return 'https://www.potrefena-husa.eu/'
+
+@scraper
+class AlKarimScraper(BaseScraper):
+    def fetch_menu(self) -> List[MenuItem]:
+        return [MenuItem('Bufet', 20)]
+
+    @property
+    def name(self) -> str:
+        return 'Al Karim'
+
+    @property
+    def menu_url(self) -> str:
+        return ''
